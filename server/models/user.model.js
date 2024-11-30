@@ -1,23 +1,24 @@
 const { Schema, model } = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+
 const userSchema = new Schema({
   fullname: {
     firstname: {
       type: String,
       required: true,
-      minlength: [3, "First name atleast three characters long"],
+      minlength: [3, "First name at least three characters long"],
     },
     lastname: {
       type: String,
-      minlength: [3, "Last name atleast three characters long"],
+      minlength: [3, "Last name at least three characters long"],
     },
   },
   email: {
     type: String,
     required: true,
     unique: true,
-    minlength: [5, "First name atleast three characters long"],
+    minlength: [5, "Email must be at least five characters long"],
   },
   password: {
     type: String,
@@ -29,17 +30,23 @@ const userSchema = new Schema({
   },
 });
 
-userSchema.methods.generateAuthToken = () => {
-  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET);
+userSchema.methods.generateAuthToken = function () {
+  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
   return token;
 };
 
-userSchema.methods.comparePassword = async (password) => {
+userSchema.methods.comparePassword = async function (password) {
+  if (!this.password) {
+    throw new Error("Password is not set on the user document.");
+  }
   return await bcrypt.compare(password, this.password);
 };
 
 userSchema.statics.hashPassword = async (password) => {
   return await bcrypt.hash(password, 10);
 };
+
 const User = model("User", userSchema);
 module.exports = User;
